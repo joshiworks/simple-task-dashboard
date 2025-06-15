@@ -14,8 +14,8 @@ export const TaskCard: React.FC<Props> = ({ task, onDelete, onEdit}: Props) =>
           <h3 className="text-xl font-semibold text-gray-800 mb-2">{task.title}</h3>
           <p className="text-gray-600 mb-4">{task.description}</p>
           <div className="flex flex-col gap-2 mb-4">
-            <p className="text-sm">
-              <span className="font-medium text-gray-700">Status:</span>{' '}
+              <p className="text-sm">
+              <span className="font-medium text-gray-700">Status:</span>
               <span className={`px-2 py-1 rounded-full text-xs ${
                 task.status === 'Completed' ? 'bg-green-100 text-green-800' :
                 task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :

@@ -1,6 +1,8 @@
-// File: src/components/TaskForm.tsx
-import React, { useState, useEffect } from 'react';
-import { TaskStatus, Task } from '../context/TaskContext';
+// src/components/TaskForm.tsx
+import React, { useMemo } from 'react'; 
+import { Task, TaskStatus } from '../context/TaskContext';
+import { useForm } from '../hooks/useForm'; 
+import { TASK_STATUSES } from '../constants';
 
 interface TaskFormProps {
   initialData?: Task;
@@ -9,45 +11,55 @@ interface TaskFormProps {
 }
 
 export const TaskForm: React.FC<TaskFormProps> = ({ initialData, onSubmit, onCancel }) => {
-  const [title, setTitle] = useState(initialData?.title || '');
-  const [description, setDescription] = useState(initialData?.description || '');
-  const [status, setStatus] = useState<TaskStatus>(initialData?.status || 'Pending');
-  const [dueDate, setDueDate] = useState(initialData?.dueDate || '');
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  // Define the initial values for the form, to be passed to useForm
+  const formInitialValues = useMemo(()=>  {
+    return { title: initialData?.title || '',
+    description: initialData?.description || '',
+    status: initialData?.status || 'Pending' as TaskStatus, // Cast for type safety
+    dueDate: initialData?.dueDate || '',}
+  },[initialData]);
 
-  useEffect(() => {
-    setTitle(initialData?.title || '');
-    setDescription(initialData?.description || '');
-    setStatus(initialData?.status || 'Pending');
-    setDueDate(initialData?.dueDate || '');
-  }, [initialData]);
+  
+  const validate = (values: typeof formInitialValues): { [key: string]: string | undefined } => {
+    const newErrors: { [key: string]: string | undefined } = {};
 
-  const validate = () => {
-    const newErrors: typeof errors = {};
-    if (!title.trim()) newErrors.title = 'Title is required';
-    if (!dueDate.trim()) newErrors.dueDate = 'Due date is required';
+    // Title validation
+    if (!values.title.trim()) {
+      newErrors.title = 'Title is required';
+    } else if (!/^[a-zA-Z0-9 ]+$/.test(values.title.trim())) {
+      newErrors.title = 'Title can only contain letters, numbers, and spaces';
+    }
+
+    // Due Date validation
+    if (!values.dueDate.trim()) {
+      newErrors.dueDate = 'Due date is required';
+    }
+
     return newErrors;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    const newTask: Task = {
-      id: initialData?.id || Date.now(),
-      title,
-      description,
-      status,
-      dueDate,
-    };
-    onSubmit(newTask);
-  };
+  // Use the custom useForm hook
+  const {
+    values,
+    errors,
+    handleChange,
+    handleBlur,
+    handleSubmit,
+  } = useForm({
+    initialValues: formInitialValues,
+    validate: validate, // Pass the validation function to the hook
+    onSubmit: (formValues) => {
+      // This onSubmit is called by the hook only when the form is valid and submitted
+      onSubmit({
+        id: initialData?.id || Date.now(), 
+        ...formValues,
+      } as Task);
+     
+    },
+  });
 
   const today = new Date().toISOString().split('T')[0];
+  const isEditMode = Boolean(initialData); // Used to determine button text
 
   return (
     <form onSubmit={handleSubmit} className="max-w-xl mx-auto bg-white p-6 rounded-xl space-y-6">
@@ -55,8 +67,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialData, onSubmit, onCan
         <label className="block mb-1 text-left font-semibold text-gray-700">Title *</label>
         <input
           type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          name="title" 
+          value={values.title}
+          onChange={handleChange} 
+          onBlur={handleBlur} 
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
@@ -65,8 +79,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialData, onSubmit, onCan
       <div>
         <label className="block mb-1 text-left font-semibold text-gray-700">Description</label>
         <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          name="description" 
+          value={values.description}
+          onChange={handleChange}
+          onBlur={handleBlur} // Optional: add onBlur for description
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -74,13 +90,18 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialData, onSubmit, onCan
       <div>
         <label className="block mb-1 text-left font-semibold text-gray-700">Status</label>
         <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value as TaskStatus)}
+          name="status" 
+          value={values.status}
+          onChange={handleChange}
+          onBlur={handleBlur} 
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="Pending">Pending</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Completed">Completed</option>
+          
+          {TASK_STATUSES.map((statusOption) => (
+            <option key={statusOption} value={statusOption}>
+              {statusOption}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -88,9 +109,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialData, onSubmit, onCan
         <label className="block mb-1 text-left font-semibold text-gray-700">Due Date *</label>
         <input
           type="date"
+          name="dueDate" // Important: `name` attribute must match state key
           min={today}
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
+          value={values.dueDate}
+          onChange={handleChange}
+          onBlur={handleBlur}
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {errors.dueDate && <p className="text-red-500 text-sm mt-1">{errors.dueDate}</p>}
@@ -106,9 +129,16 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialData, onSubmit, onCan
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          // Button is disabled if there are any errors in the `errors` object
+          disabled={Object.values(errors).some(error => error !== undefined)}
+          className={`px-4 py-2 rounded transition-colors duration-200
+            ${Object.values(errors).some(error => error !== undefined)
+              ? "bg-gray-400 text-white cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700"
+            }`
+          }
         >
-          {initialData ? 'Update Task' : 'Add Task'}
+          {isEditMode ? 'Update Task' : 'Add Task'}
         </button>
       </div>
     </form>
