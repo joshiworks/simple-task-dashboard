@@ -2,8 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { TaskProvider } from './context/TaskContext';
 import { Dashboard } from './components/Dashboard';
-import { AddTaskPage } from './components/AddTaskPage';
-import { EditTaskPage } from './components/EditTaskPage';
 import MainRoutes from './MainRoutes';
 
 export const App = () => (
