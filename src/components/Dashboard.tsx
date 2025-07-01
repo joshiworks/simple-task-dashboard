@@ -44,8 +44,7 @@ export const Dashboard: React.FC = () => {
     setFormVisible(false);
   };
 
-  const onInputChange = (event: any)=> {
-   // console.log('event.target.value:', event.target.value);
+  const onInputChange = (event: React.ChangeEvent<HTMLInputElement>)=> {
     startTransition(() => {
       setSearchText(event.target.value);
     });
