@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useTaskContext } from "../context/TaskContext";
 import { TaskCard } from "./TaskCard";
 import { TaskForm } from "./TaskForm";
@@ -13,11 +13,15 @@ export const Dashboard: React.FC = () => {
   const [isFormVisible, setFormVisible] = useState(false);
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(SORT.ASC);
+  const [searchText, setSearchText] = useState('');
+  const [isPending, startTransition] = useTransition();
 
   const handleAddClick = () => {
     setEditingTask(null);
     setFormVisible(true);
   };
+
+
 
   const handleEdit = (task: typeof tasks[0]) => {
     setEditingTask(task);
@@ -39,6 +43,13 @@ export const Dashboard: React.FC = () => {
   const handleModalClose = () => {
     setFormVisible(false);
   };
+
+  const onInputChange = (event: any)=> {
+   // console.log('event.target.value:', event.target.value);
+    startTransition(() => {
+      setSearchText(event.target.value);
+    });
+  }
 
   const filteredTasks = useFilteredTasks({
     tasks,
@@ -87,6 +98,12 @@ export const Dashboard: React.FC = () => {
 
             <button className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-yellow-600" onClick={handleAddClick}>+ Add Task</button>
 
+            <section>
+           <div>
+           <label id="Search:">Search By:</label>
+           <input aria-label="Search" id="search"  placeholder="Search by Title/Description"type="text" className="border-2 p-2" onChange={onInputChange} height={20} width={30} />
+           </div>
+      </section>    
             
         </div>
         
@@ -101,12 +118,18 @@ export const Dashboard: React.FC = () => {
             />
         </Modal>
       )}
+     
+     
 
       <section>
         {filteredTasks.length === 0 ? (
           <p className="py-10 text-2xl">No tasks matching the criteria.</p>
         ) : (
-          filteredTasks.map((task) => (
+
+
+          filteredTasks.filter(({title, description})=>{
+           return  searchText!=='' ? (title.includes(searchText) || description.includes(searchText)): true
+          }).map((task) => (
             <TaskCard
               key={task.id}
               task={task}
@@ -117,6 +140,8 @@ export const Dashboard: React.FC = () => {
             />
           ))
         )}
+      
+
       </section>
     </div>
   );
